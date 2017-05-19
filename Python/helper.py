@@ -21,7 +21,7 @@ def paths_input () :
     assert os.path.exists(teDirTIF), "The {} folder does not exist".format(teDirTIF)
     assert os.path.exists(teDirJPG), "The {} folder does not exist".format(teDirJPG)
     
-    return(trLabels,trDirTIF,trDirJPG,teDirTIF,teDirTIF)
+    return(trLabels,trDirTIF,trDirJPG,teDirTIF,teDirJPG)
 
 def paths_save_load () :
     return()
