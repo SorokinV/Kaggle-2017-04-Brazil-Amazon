@@ -9,4 +9,5 @@ PreData
 .RData?
 .Rhistory
 .ipynb_*
+Jupyter/Git*.*
 
