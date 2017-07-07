@@ -30,13 +30,13 @@ def paths_save_load () :
 # Построение по входным наборам гистограмм и переработанных изображений (изменение размеров, улучшение, сглаживание
 #
 
-def formX3 (ni, resize=(32,32), printOK=False, GaussianOK=False, EqualizeOK=True) :
+def formX3 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False) :
         if GaussianOK : ni = np.array([cv.GaussianBlur(ni[:,:,i],(3,3),0) for i in range(ni.shape[2])]).T;
         if EqualizeOK : ni = np.array([cv.equalizeHist(ni[:,:,i]) for i in range(ni.shape[2])]).T;
         if resize and ((ni.shape[0],ni.shape[1])<>resize) : ni = cv.resize(ni,resize)
         return(ni)
     
-def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=False, EqualizeOK=True, OnlyNI=False) :
+def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False, OnlyNI=False) :
     
         #before or after???? 
         #Equalize only 256 color!  ni = np.array([cv.equalizeHist(ni[:,:,i]) for i in range(ni.shape[2]-1)]).T;
@@ -57,7 +57,7 @@ def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=False, EqualizeOK=True
         del r,g,b,n,dv,dw
         return (ni)
 
-def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=False, EqualizeOK=True) :
+def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=True, EqualizeOK=False) :
     nx = None
     try : 
         ni = cv.imread(nf,-1); 
@@ -77,7 +77,7 @@ def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=False
         
     return(nx)
 
-def formImHist (nf, count, printOK=False, OnlyNI=False, GaussianOK=False, EqualizeOK=True) :
+def formImHist (nf, count, printOK=False, OnlyNI=False, GaussianOK=True, EqualizeOK=False) :
     
     def histN (nf,bins) :
         h = []
