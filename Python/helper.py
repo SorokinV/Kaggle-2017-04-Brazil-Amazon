@@ -1,9 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import sys,os,datetime
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.metrics import fbeta_score
-import  cv2 as cv
+import cv2 as cv
 
 dirInput = '../Data'
 
@@ -26,65 +26,86 @@ def paths_input () :
 def paths_save_load () :
     return()
 
-def formFH (nf, bins, printOK=False) :
+#
+# Построение по входным наборам гистограмм и переработанных изображений (изменение размеров, улучшение, сглаживание
+#
+
+def formX3 (ni, resize=(32,32), printOK=False, GaussianOK=False, EqualizeOK=True) :
+        if GaussianOK : ni = np.array([cv.GaussianBlur(ni[:,:,i],(3,3),0) for i in range(ni.shape[2])]).T;
+        if EqualizeOK : ni = np.array([cv.equalizeHist(ni[:,:,i]) for i in range(ni.shape[2])]).T;
+        if resize and ((ni.shape[0],ni.shape[1])<>resize) : ni = cv.resize(ni,resize)
+        return(ni)
+    
+def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=False, EqualizeOK=True, OnlyNI=False) :
+    
+        #before or after???? 
+        #Equalize only 256 color!  ni = np.array([cv.equalizeHist(ni[:,:,i]) for i in range(ni.shape[2]-1)]).T;
+        
+        if GaussianOK : ni = np.array([cv.GaussianBlur(ni[:,:,i],(3,3),0) for i in range(ni.shape[2])]).T;
+        r,g,b,n = ni[:,:,2],ni[:,:,1],ni[:,:,0],ni[:,:,3]
+        if resize and ((ni.shape[0],ni.shape[1])<>resize) : 
+            r,g,b,n = cv.resize(r,resize),cv.resize(g,resize),cv.resize(b,resize),cv.resize(n,resize)
+        r,g,b,n = np.array(r,np.float16),np.array(g,np.float16),np.array(b,np.float16),np.array(n,np.float16)
+        dv,dw   = np.divide((r-n),(r+n+0.0001)), np.divide((g-n),(g+n+0.0001))
+        r,g,b,n = np.array(r/256.0,np.uint8), np.array(g/256.0,np.uint8), np.array(b/256.0,np.uint8), np.array(n/256.0,np.uint8)
+        if (not OnlyNI) and EqualizeOK : r,g,b   = cv.equalizeHist(r), cv.equalizeHist(g),  cv.equalizeHist(b)
+
+        dv,dw   = np.array((dv+1.0)/2.0*256.0,np.uint8), np.array((dw+1.0)/2.0*256.0,np.uint8)
+        ni      = np.array([r,g,b,n,dv,dw]).T if not OnlyNI else np.array([n,dv,dw]).T;
+
+        #print('----',r[0,0],g[0,0],b[0,0],n[0,0],dv[0,0],dw[0,0],nx[0,0,5])
+        del r,g,b,n,dv,dw
+        return (ni)
+
+def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=False, EqualizeOK=True) :
     nx = None
     try : 
         ni = cv.imread(nf,-1); 
         if (ni is not None) :
+            
             if not ((ni.shape[2]==3) or (ni.shape[2]==4)) and printOK : print('----- error ---- shape:',ni.shape,nf)
-            if (ni.shape[2]==3) :
-                r,g,b = ni[:,:,0],ni[:,:,1],ni[:,:,2]
-                rh = np.divide(np.histogram(r,bins=bins,density=False)[0],(0.0+r.size))
-                gh = np.divide(np.histogram(g,bins=bins,density=False)[0],(0.0+g.size))
-                bh = np.divide(np.histogram(b,bins=bins,density=False)[0],(0.0+b.size))
-                nx = np.hstack((rh,gh,bh)); 
-            if (ni.shape[2]==4) :
-                r,g,b,n = ni[:,:,2],ni[:,:,1],ni[:,:,1],ni[:,:,3]
-                dv = np.divide((r-n),(r+n+0.01))
-                dw = np.divide((g-n),(g+n+0.01))
-                rh = np.divide(np.histogram(r,bins=bins,density=False)[0],(0.0+r.size))
-                gh = np.divide(np.histogram(g,bins=bins,density=False)[0],(0.0+g.size))
-                bh = np.divide(np.histogram(b,bins=bins,density=False)[0],(0.0+b.size))
-                nh = np.divide(np.histogram(n,bins=bins,density=False)[0],(0.0+n.size))
-                dvh= np.divide(np.histogram(dv,bins=bins,density=False)[0],(0.0+dv.size))
-                dwh= np.divide(np.histogram(dw,bins=bins,density=False)[0],(0.0+dw.size))
-                nx = np.hstack((rh,gh,bh,nh,dvh,dwh)); 
-    except BaseException as e :
+                
+            if (ni.shape[2]==3) :   nx = formX3 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK)
+                
+            if (ni.shape[2]==4) :   nx = formX3 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK, OnlyNI=OnlyNI)
+
+    except BaseException as e : 
         print(nf,e); nx = None;
     
-    if (nx is None) and printOK : print('------ None:',nf)
+    if nx is None and printOK : 
+        print('------ None:',nf); nx = None
         
     return(nx)
 
-
-def formFHMMM (nf, bins, mmm, printOK=False) :
-    nx = []
+def formImHist (nf, count, printOK=False, OnlyNI=False, GaussianOK=False, EqualizeOK=True) :
+    
+    def histN (nf,bins) :
+        h = []
+        for i in range(nf.shape[2]) : 
+            hh,_ = np.histogram(nf[:,:,i].ravel(),bins=bins)
+            h = h + hh.tolist()
+        return (np.array(h,dtype=np.uint16))
+             
+    def calculateBins (low,high,count) :
+        size    = float(high-low)/float(count)
+        bins = [low+x*size for x in range(count+1)]; #print(count,size,len(bins),bins[:3],bins[-3:])
+        return (bins)
+             
+    nx = None
     try : 
-        ni = cv.imread(nf,-1); 
+        ni = formImExt (nf, resize=False, printOK=printOK, OnlyNI=OnlyNI, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK)
         if (ni is not None) :
-            if not ((ni.shape[2]==3) or (ni.shape[2]==4)) and printOK : print('----- error ---- shape:',ni.shape,nf)
-            if (ni.shape[2]==3) :
-                r,g,b = ni[:,:,0],ni[:,:,1],ni[:,:,2]
-                for im,mm in zip([r,g,b],mmm.tolist()) :
-                    im1 = np.clip(im.astype(np.float32),mm[0],mm[1])
-                    im1 = (im1-mm[0])/(mm[1]-mm[0])*bins;
-                    hh1 = np.divide(np.histogram(im1,bins=bins,density=False)[0],(0.0+im1.size))
-                    nx.append(hh1)
-                nx = np.array(nx).flatten(); 
-            if (ni.shape[2]==4) :
-                r,g,b,n = ni[:,:,2],ni[:,:,1],ni[:,:,1],ni[:,:,3]
-                dv = np.divide((r-n),(r+n+0.01))
-                dw = np.divide((g-n),(g+n+0.01))
-                for im,mm in zip([r,g,b,n,dv,dw],mmm.tolist()) :
-                    im1 = np.clip(im.astype(np.float32),mm[0],mm[1])
-                    im1 = (im1-mm[0])/(mm[1]-mm[0])*bins;
-                    hh1 = np.divide(np.histogram(im1,bins=bins,density=False)[0],(0.0+im1.size))
-                    nx.append(hh1)
-                nx = np.array(nx).flatten(); 
+            
+            if printOK : print('formExtHist 1.1:',nf,ni.shape, ni.min(), ni.max())
+            bins = calculateBins(0,255,count)
+            if printOK : print('formExtHist 1.2:',count,bins[:4],bins[-4:])
+            nx = histN(ni,bins)
+            if printOK : print('formExtHist 1.3:',nf,nx.shape)
+            
     except BaseException as e :
         print(nf,e); nx = None;
     
-    if len(nx)==0 and printOK : 
+    if nx is None and printOK : 
         print('------ None:',nf); nx = None
         
     return(nx)
