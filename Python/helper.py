@@ -67,7 +67,7 @@ def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=True,
                 
             if (ni.shape[2]==3) :   nx = formX3 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK)
                 
-            if (ni.shape[2]==4) :   nx = formX3 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK, OnlyNI=OnlyNI)
+            if (ni.shape[2]==4) :   nx = formX4 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK, OnlyNI=OnlyNI)
 
     except BaseException as e : 
         print(nf,e); nx = None;
