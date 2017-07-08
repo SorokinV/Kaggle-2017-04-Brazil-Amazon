@@ -36,7 +36,7 @@ def formX3 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False
         if resize and ((ni.shape[0],ni.shape[1])<>resize) : ni = cv.resize(ni,resize)
         return(ni)
     
-def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False, OnlyNI=False) :
+def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False, OnlyNI=False, ExtIndex=False) :
     
         #before or after???? 
         #Equalize only 256 color!  ni = np.array([cv.equalizeHist(ni[:,:,i]) for i in range(ni.shape[2]-1)]).T;
@@ -46,15 +46,29 @@ def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False
         if resize and ((ni.shape[0],ni.shape[1])<>resize) : 
             r,g,b,n = cv.resize(r,resize),cv.resize(g,resize),cv.resize(b,resize),cv.resize(n,resize)
         r,g,b,n = np.array(r,np.float16),np.array(g,np.float16),np.array(b,np.float16),np.array(n,np.float16)
-        dv,dw   = np.divide((r-n),(r+n+0.0001)), np.divide((g-n),(g+n+0.0001))
+        
+        
+        # навал индексной массы
+        ndvi,ndwi  = np.divide((r-n),(r+n+0.0001)), np.divide((g-n),(g+n+0.0001))
+        evi        = 2.5*np.divide((n-r),(n+6*r-7.5*b+1.0))
+        evi2       = 2.5*np.divide((n-r),(n+2.4*r+1.0))
+        savi       = 1.5*np.divide((n-r),(n+r+1.0))
+        
+        # аккуратно переводим r,g,b,n из 0..65536 в 0..256 = uint8
         r,g,b,n = np.array(r/256.0,np.uint8), np.array(g/256.0,np.uint8), np.array(b/256.0,np.uint8), np.array(n/256.0,np.uint8)
         if (not OnlyNI) and EqualizeOK : r,g,b   = cv.equalizeHist(r), cv.equalizeHist(g),  cv.equalizeHist(b)
 
-        dv,dw   = np.array((dv+1.0)/2.0*256.0,np.uint8), np.array((dw+1.0)/2.0*256.0,np.uint8)
-        ni      = np.array([r,g,b,n,dv,dw]).T if not OnlyNI else np.array([n,dv,dw]).T;
+        # аккуратно переводим индекснуюю массу из [-1..1] в 0..256 = uint8
+        ndvi,ndwi   = np.array((ndvi+1.0)/2.0*256.0,np.uint8), np.array((ndwi+1.0)/2.0*256.0,np.uint8)
+        if ExtIndex :
+            evi     = np.array((evi+1.0)/2.0*256.0,np.uint8)
+            evi2    = np.array((evi2+1.0)/2.0*256.0,np.uint8)
+            savi    = np.array((savi+1.0)/2.0*256.0,np.uint8)
+            ni      = np.array([r,g,b,n,ndvi,ndwi,evi2,savi]).T if not OnlyNI else np.array([n,ndvi,ndwi,evi2,savi]).T;
+        else : ni   = np.array([r,g,b,n,ndvi,ndwi]).T if not OnlyNI else np.array([n,ndvi,ndwi]).T;
 
         #print('----',r[0,0],g[0,0],b[0,0],n[0,0],dv[0,0],dw[0,0],nx[0,0,5])
-        del r,g,b,n,dv,dw
+        del r,g,b,n,ndvi,ndwi,evi,evi2,savi
         return (ni)
 
 def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=True, EqualizeOK=False) :
