@@ -36,7 +36,7 @@ def formX3 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False
         if resize and ((ni.shape[0],ni.shape[1])<>resize) : ni = cv.resize(ni,resize)
         return(ni)
     
-def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False, OnlyNI=False, ExtIndex=False) :
+def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False, OnlyNI=False, ExtIndex=True) :
     
         #before or after???? 
         #Equalize only 256 color!  ni = np.array([cv.equalizeHist(ni[:,:,i]) for i in range(ni.shape[2]-1)]).T;
