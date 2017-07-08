@@ -30,6 +30,46 @@ def getProb01 (trYP, th=0.5) :
     trYY[trYY<th] = 0
     trYY[trYY>0]  = 1
     return (trYY)
+
+# Построение решения 0-1 исходя из пределов прохождения cc (построение через getTh)
+def getProbX01 (tPr, cc, weather=[0,3,9,10], cloudy=9) :
+    t01  = np.zeros(tPr.shape,dtype=np.uint8);
+    temp0 = tPr[:,weather].argmax(axis=1); #print(temp0[0:10])
+    temp1 = np.array(weather)[temp0]
+    for i in range(t01.shape[0]) : 
+        temp2 = tPr[i,:]>cc
+        t01[i,temp2]    = 1
+        t01[i,weather]  = 0
+        t01[i,temp1[i]] = 1
+        if t01[i,cloudy]==1 : t01[i,:]=0; t01[i,cloudy]=1;
+    
+    #print(temp1[0:10])
+    #print(t01[0:10,weather+[1,2]])
+    return(t01)
+
+# Построение пределов прохождения для предсказанного
+def getTh (tGround,tPredict, prec=100 ) :
+    ixx,iacc = [], []
+    for i in range(tGround.shape[1]) :
+        max, maxxx = 0.0, 0.0
+        for xx in range(0,prec+1) :
+            tempYP = getProb01(tPredict[:,i],th=(float(xx)/prec)); #print(tPredict[:,1],tempYP[0])
+            temp = skm.accuracy_score(tGround[:,i],tempYP)
+            #print(float(xx/10.0),temp)
+            if (temp>max) : 
+                max = temp; maxxx = float(xx)
+                temp = skm.confusion_matrix(tGround[:,i],tempYP);
+                minloss = temp[0][1]+temp[1][0]
+        ixx.append(maxxx)
+        tempYP = getProb01 (tPredict[:,i])
+        temp = skm.accuracy_score(tGround[:,i],tempYP)
+        minloss05 = skm.confusion_matrix(tGround[:,i],tempYP);
+        minloss05 = minloss05[0][1]+minloss05[1][0]
+        iacc.append((maxxx,max,temp,minloss,minloss05))
+    ixx = [float(xx/prec) for xx in ixx]
+    return (ixx,iacc)
+##ixx, iacc = getTh(trY,trP, prec=100)
+#np.array(ixx) , iacc
     
 #
 # Оценка результативности предсказания
