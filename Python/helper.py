@@ -45,12 +45,12 @@ def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False
         r,g,b,n = ni[:,:,2],ni[:,:,1],ni[:,:,0],ni[:,:,3]
         if resize and ((ni.shape[0],ni.shape[1])<>resize) : 
             r,g,b,n = cv.resize(r,resize),cv.resize(g,resize),cv.resize(b,resize),cv.resize(n,resize)
-        r,g,b,n = np.array(r,np.float16),np.array(g,np.float16),np.array(b,np.float16),np.array(n,np.float16)
+        r,g,b,n = np.array(r,np.float32),np.array(g,np.float32),np.array(b,np.float32),np.array(n,np.float32)
         
         
         # навал индексной массы
         ndvi,ndwi  = np.divide((r-n),(r+n+0.0001)), np.divide((g-n),(g+n+0.0001))
-        evi        = 2.5*np.divide((n-r),(n+6*r-7.5*b+1.0))
+        ## ? unknown range evi        = 2.5*np.divide((n-r),(n+6*r-7.5*b+1.0))
         evi2       = 2.5*np.divide((n-r),(n+2.4*r+1.0))
         savi       = 1.5*np.divide((n-r),(n+r+1.0))
         
@@ -61,17 +61,17 @@ def formX4 (ni, resize=(32,32), printOK=False, GaussianOK=True, EqualizeOK=False
         # аккуратно переводим индекснуюю массу из [-1..1] в 0..256 = uint8
         ndvi,ndwi   = np.array((ndvi+1.0)/2.0*256.0,np.uint8), np.array((ndwi+1.0)/2.0*256.0,np.uint8)
         if ExtIndex :
-            evi     = np.array((evi+1.0)/2.0*256.0,np.uint8)
-            evi2    = np.array((evi2+1.0)/2.0*256.0,np.uint8)
-            savi    = np.array((savi+1.0)/2.0*256.0,np.uint8)
+            ## unknown range ? evi     = np.array((evi+1.0)/2.0*256.0,np.uint8)
+            evi2    = np.array((evi2+1.041660)/3.541622*256.0,np.uint8)
+            savi    = np.array((savi+1.499977)/3.0*256.0,np.uint8)
             ni      = np.array([r,g,b,n,ndvi,ndwi,evi2,savi]).T if not OnlyNI else np.array([n,ndvi,ndwi,evi2,savi]).T;
         else : ni   = np.array([r,g,b,n,ndvi,ndwi]).T if not OnlyNI else np.array([n,ndvi,ndwi]).T;
 
         #print('----',r[0,0],g[0,0],b[0,0],n[0,0],dv[0,0],dw[0,0],nx[0,0,5])
-        del r,g,b,n,ndvi,ndwi,evi,evi2,savi
+        del r,g,b,n,ndvi,ndwi,evi2,savi
         return (ni)
 
-def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=True, EqualizeOK=False) :
+def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=True, EqualizeOK=False, ExtIndex=True) :
     nx = None
     try : 
         ni = cv.imread(nf,-1); 
@@ -81,7 +81,7 @@ def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=True,
                 
             if (ni.shape[2]==3) :   nx = formX3 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK)
                 
-            if (ni.shape[2]==4) :   nx = formX4 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK, OnlyNI=OnlyNI)
+            if (ni.shape[2]==4) :   nx = formX4 (ni, resize=resize, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK, OnlyNI=OnlyNI, ExtIndex=ExtIndex)
 
     except BaseException as e : 
         print(nf,e); nx = None;
@@ -91,7 +91,7 @@ def formImExt (nf, resize=(32,32), printOK=False, OnlyNI=False, GaussianOK=True,
         
     return(nx)
 
-def formImHist (nf, count, printOK=False, OnlyNI=False, GaussianOK=True, EqualizeOK=False) :
+def formImHist (nf, count, printOK=False, OnlyNI=False, GaussianOK=True, EqualizeOK=False, ExtIndex=True) :
     
     def histN (nf,bins) :
         h = []
@@ -107,7 +107,7 @@ def formImHist (nf, count, printOK=False, OnlyNI=False, GaussianOK=True, Equaliz
              
     nx = None
     try : 
-        ni = formImExt (nf, resize=False, printOK=printOK, OnlyNI=OnlyNI, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK)
+        ni = formImExt (nf, resize=False, printOK=printOK, OnlyNI=OnlyNI, GaussianOK=GaussianOK, EqualizeOK=EqualizeOK, ExtIndex=ExtIndex)
         if (ni is not None) :
             
             if printOK : print('formExtHist 1.1:',nf,ni.shape, ni.min(), ni.max())
